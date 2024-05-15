@@ -1,0 +1,83 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+import time
+import pandas as pd
+import matplotlib.pyplot as plt
+
+URL = 'https://en.wikipedia.org/wiki/List_of_largest_companies_by_revenue'
+
+page = requests.get(URL)
+soup = BeautifulSoup(page.content, 'html')
+table = soup.find_all('tbody')
+table = table[0]
+
+data = []
+for i in table:
+    data.append(i.text)
+
+headers = data[:4]
+
+headers = headers[0]
+
+headers = headers.split('\n')
+
+for i in headers:
+    if i == '':
+        headers.remove('')
+
+data = data[4:]
+for i in data:
+    if i == '\n':
+        data.remove(i)
+headers.pop(-2)
+headers.pop(-2)
+
+for i in range(len(data)):
+    data[i] = data[i].split('\n')
+
+for i in data:
+    print(i)
+
+for i in range(len(data)):
+    for j in data[i]:
+        if j=='':
+            data[i].remove('')
+        
+        if data[i][-1] =='':
+            data[i].remove('')
+
+    data[i].pop(-2)
+
+    print(data[i])
+
+df = pd.DataFrame(data, columns=['Rank','Name','Industry','Revenue(USD millions)','Profit(USD millions)','Employees','Headquarters','Revenue per worker'])
+df.reset_index(drop=True,inplace=True)
+df.to_csv('top_company.csv',index=False)
+
+print(df)
+
+df['Revenue(USD millions)'] = df['Revenue(USD millions)'].str.replace(',','')
+df['Revenue(USD millions)'] = df['Revenue(USD millions)'].str.replace('$','')
+
+df['Profit(USD millions)'] = df['Profit(USD millions)'].str.replace(',','')
+df['Profit(USD millions)'] = df['Profit(USD millions)'].str.replace('$','')
+
+df['Revenue per worker'] = df['Revenue per worker'].str.replace(',','')
+df['Revenue per worker'] = df['Revenue per worker'].str.replace('$','')
+
+df['Revenue(USD millions)'] = pd.to_numeric(df['Revenue(USD millions)'])
+df['Profit(USD millions)'] = pd.to_numeric(df['Profit(USD millions)'], errors='coerce')
+df['Revenue per worker'] = pd.to_numeric(df['Revenue per worker'])
+
+df.plot(kind='line', y='Revenue(USD millions)', title='Revenues')
+plt.ylabel('Revenue (USD millions)')
+plt.show()
+
+df.plot(kind='line', y='Profit(USD millions)', title='Revenues')
+plt.ylabel('Profit(USD millions)')
+plt.show()
+
+df.plot(kind='line', y='Revenue per worker', title='Revenues_per_worker')
+plt.ylabel('Revenue per worker')
+plt.show()
